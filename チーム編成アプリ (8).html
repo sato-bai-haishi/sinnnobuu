@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="チーム編成">
+<title>チーム編成システム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --ink:#1a0f00;--ink2:#3d2000;--ink3:#6b3a00;
+  --gold:#b8860b;--gold2:#daa520;--gold3:#f5d78e;
+  --parch:#f5efe0;--parch2:#ede3cc;--parch3:#d6c9a8;
+  --red:#8b1a1a;--fp:'Noto Serif JP',serif;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;background:#1a0f00}
+body{font-family:var(--fp);background:var(--parch);color:var(--ink);display:flex;flex-direction:column;max-width:430px;margin:0 auto;min-height:100vh;min-height:100dvh}
+
+/* ── HEADER ── */
+.mon-header{background:var(--ink);flex-shrink:0;padding-top:var(--safe-top)}
+.deco-line{height:3px;background:linear-gradient(90deg,var(--ink),var(--gold),var(--gold2),var(--gold),var(--ink))}
+.hdr-inner{padding:11px 14px 9px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hdr-title{font-size:15px;font-weight:700;color:var(--gold3);letter-spacing:.15em;flex:1;text-align:center}
+.nav-back{background:none;border:none;color:var(--parch3);font-family:var(--fp);font-size:13px;cursor:pointer;letter-spacing:.08em;padding:4px 0;min-width:48px}
+.nav-action{background:none;border:none;color:var(--gold2);font-family:var(--fp);font-size:13px;cursor:pointer;font-weight:700;letter-spacing:.08em;padding:4px 0;min-width:48px;text-align:right}
+
+/* ── SCREEN ── */
+.screen{display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.screen.active{display:flex;flex-direction:column}
+.content{padding:12px 14px;flex:1}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{display:flex;background:var(--ink);border-top:3px solid var(--gold);flex-shrink:0;padding-bottom:var(--safe-bot)}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:9px 4px 7px;font-size:10px;color:var(--parch3);cursor:pointer;gap:3px;border:none;background:none;font-family:var(--fp);font-weight:700;letter-spacing:.04em;border-top:3px solid transparent;margin-top:-3px;transition:color .15s,background .15s}
+.bnav-item.active{color:var(--gold2);border-top:3px solid var(--gold2);background:rgba(184,134,11,.14)}
+.bnav-icon{width:22px;height:22px;flex-shrink:0}
+
+/* ── CARD ── */
+.washi-card{background:var(--parch2);border:1.5px solid var(--gold);padding:12px 14px;margin-bottom:10px;position:relative}
+.washi-card::before{content:'';position:absolute;top:3px;left:3px;right:3px;bottom:3px;border:.5px solid var(--gold3);pointer-events:none}
+
+/* ── BUTTONS ── */
+.btn{display:flex;align-items:center;justify-content:center;width:100%;padding:12px 16px;margin-bottom:8px;font-family:var(--fp);font-size:14px;font-weight:700;letter-spacing:.1em;cursor:pointer;position:relative;border:none;transition:transform .12s;min-height:48px}
+.btn:active{transform:scale(.97)}
+.btn::after{content:'';position:absolute;top:3px;left:3px;right:3px;bottom:3px;border:.5px solid rgba(255,255,255,.22);pointer-events:none}
+.btn-red{background:var(--red);color:var(--gold3);border:1.5px solid var(--gold)}
+.btn-dark{background:var(--ink);color:var(--gold3);border:1.5px solid var(--gold)}
+.btn-gold{background:var(--gold);color:var(--ink);border:1.5px solid var(--ink2);font-weight:700}
+.btn-sm{width:auto;padding:7px 12px;font-size:12px;margin:0;min-height:36px}
+.btn-ghost{background:transparent;color:var(--ink3);border:1.5px solid var(--parch3)}
+
+/* ── TAB BAR ── */
+.tab-bar{display:flex;background:var(--ink2);border-bottom:2px solid var(--gold);flex-shrink:0}
+.tab{flex:1;text-align:center;padding:10px 4px;font-family:var(--fp);font-size:12px;font-weight:700;letter-spacing:.08em;cursor:pointer;color:var(--parch3);border:none;background:none;border-bottom:3px solid transparent;min-height:44px}
+.tab.active{color:var(--gold3);border-bottom:3px solid var(--gold2);background:rgba(184,134,11,.18)}
+
+/* ── MEMBER ROW ── */
+.member-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--parch3)}
+.member-row:last-child{border-bottom:none}
+.mname{font-size:13px;color:var(--ink);font-weight:700;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mname.off{color:var(--parch3);text-decoration:line-through}
+.radio-group{display:flex;flex-wrap:wrap;gap:3px;flex:1}
+.rl{display:flex;align-items:center;font-size:11px;cursor:pointer;padding:4px 8px;border:1px solid var(--parch3);background:var(--parch);color:var(--ink3);font-family:var(--fp);font-weight:700;white-space:nowrap;min-height:30px}
+.rl input{display:none}
+.rl.sel{border-color:var(--red);background:var(--red);color:var(--gold3)}
+.role-sel{font-size:11px;padding:3px 4px;border:1px solid var(--gold);background:var(--parch);color:var(--ink3);font-family:var(--fp);font-weight:700;flex-shrink:0;min-height:30px;max-width:52px;cursor:pointer}
+.chk-wrap{display:flex;align-items:center;cursor:pointer;flex-shrink:0;gap:0}
+.chk-box{width:24px;height:24px;border:2px solid var(--gold);background:var(--parch);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.chk-box.checked{background:var(--ink);border-color:var(--gold)}
+.chk-box.checked::after{content:'';display:block;width:7px;height:12px;border-right:2.5px solid var(--gold3);border-bottom:2.5px solid var(--gold3);transform:rotate(45deg) translate(-1px,-2px)}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;font-size:11px;padding:3px 9px;font-weight:700;letter-spacing:.08em}
+.b-gold{background:var(--gold);color:var(--ink)}
+.b-red{background:var(--red);color:var(--gold3)}
+
+/* ── ALERTS ── */
+.alert{padding:9px 12px;font-size:12px;margin-bottom:10px;letter-spacing:.04em;border:1px solid;line-height:1.5}
+.alert-warn{background:#fff8e6;border-color:var(--gold);color:var(--ink2)}
+.alert-err{background:#fce8e8;border-color:var(--red);color:var(--red)}
+.alert-ok{background:#e8f5e9;border-color:#2e7d32;color:#1b5e20}
+
+/* ── TEAM EDIT ── */
+.team-edit-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.team-edit-row input{flex:1;padding:9px 10px;border:1.5px solid var(--gold);background:var(--parch);color:var(--ink);font-family:var(--fp);font-size:13px;font-weight:700;min-height:44px}
+.dot{width:12px;height:12px;flex-shrink:0}
+
+/* ── RESULT ── */
+.text-result{background:var(--parch2);border:1.5px solid var(--gold);padding:12px;font-size:14px;line-height:2.1;color:var(--ink);margin-bottom:10px;white-space:pre-wrap;word-break:break-all;font-family:var(--fp);font-weight:700;position:relative}
+.text-result::before{content:'';position:absolute;top:3px;left:3px;right:3px;bottom:3px;border:.5px solid var(--gold3);pointer-events:none}
+.canvas-wrap{border:2px solid var(--gold);margin-bottom:10px;background:var(--parch);overflow:hidden}
+canvas{display:block;width:100%;height:auto}
+
+/* ── SETTINGS ── */
+.setting-label{font-size:13px;font-weight:700;color:var(--ink);letter-spacing:.08em;margin-bottom:4px}
+.setting-desc{font-size:11px;color:var(--ink3);line-height:1.5;margin-bottom:6px}
+.setting-row{padding:13px 0;border-bottom:1px solid var(--parch3)}
+.setting-row:last-child{border-bottom:none}
+.setting-row input{padding:10px 10px;border:1.5px solid var(--gold);background:var(--parch);color:var(--ink);font-family:var(--fp);font-size:13px;width:100%;min-height:44px}
+.col-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.col-grid>div>div{font-size:11px;color:var(--ink3);margin-bottom:3px}
+.col-grid input{text-align:center}
+
+/* ── HOME ── */
+.hero{text-align:center;padding:28px 14px 20px}
+.hero-crest{width:72px;height:72px;border:3px solid var(--gold);background:var(--ink);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;position:relative}
+.hero-crest::before{content:'';position:absolute;top:5px;left:5px;right:5px;bottom:5px;border:1px solid var(--gold3)}
+.hero-title{font-size:23px;font-weight:700;color:var(--ink);letter-spacing:.25em;margin-bottom:5px}
+.hero-sub{font-size:11px;color:var(--ink3);letter-spacing:.2em;margin-bottom:22px}
+.conn-row{display:flex;align-items:center;gap:10px}
+.mono-crest{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:1.5px solid var(--gold);background:var(--ink);color:var(--gold3);font-size:15px;font-weight:700;flex-shrink:0}
+.section-sub{font-size:11px;color:var(--ink3);margin-bottom:10px;letter-spacing:.06em;line-height:1.6}
+
+/* ── CODE BLOCK ── */
+.code-block{font-size:11px;color:var(--ink3);font-family:monospace;background:var(--parch);padding:10px;line-height:1.9;border:1px solid var(--parch3)}
+</style>
+</head>
+<body style="position:relative">
+
+<!-- ════ HOME ════ -->
+<div id="screen-home" class="screen active">
+  <div class="mon-header">
+    <div class="deco-line"></div>
+    <div class="hdr-inner">
+      <div style="min-width:48px"></div>
+      <div class="hdr-title">チーム編成システム</div>
+      <svg width="36" height="36" viewBox="0 0 36 36" style="flex-shrink:0">
+        <circle cx="18" cy="18" r="17" fill="#1a0f00" stroke="#b8860b" stroke-width="1.5"/>
+        <circle cx="18" cy="18" r="13" fill="none" stroke="#daa520" stroke-width=".7"/>
+        <polygon points="18,6 20.7,14.3 29.6,14.3 22.5,19.5 25.2,27.8 18,22.6 10.8,27.8 13.5,19.5 6.4,14.3 15.3,14.3" fill="#b8860b"/>
+      </svg>
+    </div>
+    <div class="deco-line"></div>
+  </div>
+  <div class="content">
+    <div id="home-no-sheet">
+      <div class="hero">
+        <div class="hero-crest">
+          <svg width="40" height="40" viewBox="0 0 40 40">
+            <polygon points="20,4 23,15 35,15 25,22 28,33 20,26 12,33 15,22 5,15 17,15" fill="#b8860b"/>
+          </svg>
+        </div>
+        <div class="hero-title" style="font-size:16px;letter-spacing:.12em;margin-bottom:3px">【新信長の野望】</div>
+        <div class="hero-title">チーム編成</div>
+      </div>
+      <button class="btn btn-red" id="link-btn" onclick="onLinkBtn()">▶ スプレッドシートと連携する</button>
+      <button class="btn btn-dark" onclick="loadSample()">▶ サンプルデータで試す</button>
+    </div>
+    <div id="home-connected" style="display:none">
+      <div class="washi-card" style="margin-bottom:10px">
+        <div class="conn-row" style="margin-bottom:8px">
+          <div class="mono-crest">連</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;color:var(--ink);letter-spacing:.08em">シート登録済み</div>
+            <div id="sheet-name-disp" style="font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px"></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="goSettings()">編集</button>
+        </div>
+        <button class="btn btn-red" style="margin-bottom:0" onclick="fetchSheet()">↺ 最新データを取得する</button>
+      </div>
+      <div id="fetch-status" style="display:none" class="alert alert-warn"></div>
+      <button class="btn btn-red" onclick="go('screen-members','members')">▶ メンバー一覧へ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MEMBERS ════ -->
+<div id="screen-members" class="screen">
+  <div class="mon-header">
+    <div class="deco-line"></div>
+    <div class="hdr-inner">
+      <button class="nav-back" onclick="go('screen-home','home')">◀ 戻る</button>
+      <span class="hdr-title">メンバー編成</span>
+      <span id="member-count" class="badge b-gold">参加 0名</span>
+    </div>
+    <div style="display:flex;justify-content:center;gap:8px;padding:6px 14px;background:var(--ink);border-top:1px solid rgba(184,134,11,0.3)">
+      <span id="hdr-active" style="font-size:11px;font-weight:700;color:var(--gold3);letter-spacing:.06em;font-family:var(--fp)">参加: 0名</span>
+      <span style="color:rgba(184,134,11,0.4)">|</span>
+      <span id="hdr-tori" style="font-size:11px;font-weight:700;letter-spacing:.06em;font-family:var(--fp);color:var(--gold3)">砦役: 0/5名</span>
+      <span style="color:rgba(184,134,11,0.4)">|</span>
+      <span id="hdr-koen" style="font-size:11px;font-weight:700;letter-spacing:.06em;font-family:var(--fp);color:var(--gold3)">後援: 0/10名</span>
+    </div>
+    <div class="deco-line"></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab active" id="tab-m" onclick="switchMTab('members')">メンバー一覧</button>
+    <button class="tab" id="tab-t" onclick="switchMTab('teams')">チーム設定</button>
+  </div>
+  <div id="mtab-members" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="content" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">
+      <div id="warn-50" style="display:none" class="alert alert-warn">⚠ 参加人数が51名以上です。不参加に変更してください。</div>
+
+      <div id="member-list"></div>
+    </div>
+    <div style="padding:12px 14px;border-top:1px solid var(--parch3);background:var(--parch);flex-shrink:0">
+      <button class="btn btn-dark" style="margin-bottom:8px" onclick="showAddMember()">＋ メンバーを追加</button>
+      <button class="btn btn-red" style="margin-bottom:0" onclick="goResult()">▶ チームを作成する</button>
+    </div>
+  </div>
+  <div id="mtab-teams" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div class="content" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">
+      <div class="section-sub">チーム名を変更するとメンバーの配置希望も自動で更新されます</div>
+      <div id="team-edit-list"></div>
+    </div>
+    <div style="padding:12px 14px;border-top:1px solid var(--parch3);background:var(--parch);flex-shrink:0">
+      <button class="btn btn-dark" style="margin-bottom:0" onclick="addTeam()">＋ チームを追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ RESULT ════ -->
+<div id="screen-result" class="screen">
+  <div class="mon-header">
+    <div class="deco-line"></div>
+    <div class="hdr-inner">
+      <button class="nav-back" onclick="go('screen-members','members')">◀ 戻る</button>
+      <span class="hdr-title">チーム分け結果</span>
+      <button class="nav-action" onclick="buildTeams()">再作成</button>
+    </div>
+    <div class="deco-line"></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab active" id="rtab-img" onclick="switchRTab('img')">画像</button>
+    <button class="tab" id="rtab-txt" onclick="switchRTab('txt')">テキスト</button>
+  </div>
+  <div id="rtab-img-view" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="content" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">
+      <div class="canvas-wrap"><canvas id="result-canvas" width="700"></canvas></div>
+    </div>
+    <div style="padding:12px 14px;border-top:1px solid var(--parch3);background:var(--parch);flex-shrink:0">
+      <button class="btn btn-gold" style="margin-bottom:4px" onclick="downloadImg()">▼ 画像を保存する</button>
+      <div style="font-size:11px;color:var(--ink3);text-align:center;line-height:1.6">※ iPhoneは画像を長押し→「写真に保存」</div>
+    </div>
+  </div>
+  <div id="rtab-txt-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div class="content" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">
+      <div class="text-result" id="text-result"></div>
+    </div>
+    <div style="padding:12px 14px;border-top:1px solid var(--parch3);background:var(--parch);flex-shrink:0">
+      <button class="btn btn-gold" style="margin-bottom:0" onclick="copyText()">▶ テキストをコピー</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SETTINGS ════ -->
+<div id="screen-settings" class="screen">
+  <div class="mon-header">
+    <div class="deco-line"></div>
+    <div class="hdr-inner">
+      <button class="nav-back" onclick="go('screen-home','home')">◀ 戻る</button>
+      <span class="hdr-title">設定</span>
+      <button class="nav-action" onclick="saveSettings()">保存</button>
+    </div>
+    <div class="deco-line"></div>
+  </div>
+  <div class="content">
+    <div class="washi-card" style="margin-bottom:10px">
+      <div class="setting-row">
+        <div class="setting-label">スプレッドシートのURL</div>
+        <div class="setting-desc">GoogleスプレッドシートのURLを貼り付けてください</div>
+        <input type="url" id="s-url" placeholder="https://docs.google.com/spreadsheets/d/...">
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">シート名（タブ名）</div>
+        <div class="setting-desc">データが入っているタブ名（省略すると1枚目を使用）</div>
+        <input type="text" id="s-sheet" placeholder="例：メンバーリスト">
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">列の設定</div>
+        <div class="setting-desc">各データが入っている列を指定してください（A, B, C…）</div>
+        <div class="col-grid">
+          <div><div>名前の列</div><input type="text" id="s-col-name" placeholder="A"></div>
+          <div><div>配置希望の列</div><input type="text" id="s-col-wish" placeholder="B"></div>
+          <div><div>参加フラグの列</div><input type="text" id="s-col-join" placeholder="C"></div>
+          <div><div>参加を表す値</div><input type="text" id="s-val-join" placeholder="○"></div>
+          <div><div>役職の列</div><input type="text" id="s-col-role" placeholder="D"></div>
+          <div><div>役職の値例</div><input type="text" placeholder="砦役 / 後援" disabled style="opacity:.5"></div>
+        </div>
+      </div>
+    </div>
+    <div class="washi-card">
+      <div class="setting-label" style="margin-bottom:8px">推奨スプレッドシート構成</div>
+      <div class="code-block">A列: 名前<br>B列: 配置希望（プルダウン推奨）<br>C列: 参加（○ / ×）<br>D列: 役職（砦役 / 後援 / 空欄可）</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:8px;line-height:1.6">※ シートを「リンクを知っている全員が閲覧可」に設定してください</div>
+    </div>
+    <div id="save-msg" style="display:none;margin-top:10px" class="alert alert-ok"></div>
+  </div>
+</div>
+
+<!-- ════ ADD MEMBER MODAL ════ -->
+<div id="add-member-overlay" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:100;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--parch2);border:2px solid var(--gold);width:100%;max-width:340px;position:relative">
+    <div style="background:var(--ink);padding:10px 14px;border-bottom:2px solid var(--gold);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:14px;font-weight:700;color:var(--gold3);letter-spacing:.1em">メンバーを追加</span>
+      <button onclick="hideAddMember()" style="background:none;border:none;color:var(--parch3);font-size:18px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+    <div style="padding:16px 14px">
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;letter-spacing:.06em">名前</div>
+      <input type="text" id="new-member-name" placeholder="名前を入力" style="width:100%;padding:10px;border:1.5px solid var(--gold);background:var(--parch);color:var(--ink);font-family:var(--fp);font-size:14px;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;letter-spacing:.06em">配置希望チーム</div>
+      <select id="new-member-wish" style="width:100%;padding:10px;border:1.5px solid var(--gold);background:var(--parch);color:var(--ink);font-family:var(--fp);font-size:14px;margin-bottom:16px;appearance:none;-webkit-appearance:none"></select>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;letter-spacing:.06em">役割（任意）</div>
+      <select id="new-member-role" style="width:100%;padding:10px;border:1.5px solid var(--gold);background:var(--parch);color:var(--ink);font-family:var(--fp);font-size:14px;margin-bottom:16px;appearance:none;-webkit-appearance:none">
+        <option value="">なし</option>
+        <option value="砦役">砦役</option>
+        <option value="後援">後援</option>
+      </select>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;letter-spacing:.06em">参加状態</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;padding:9px;border:1.5px solid var(--gold);background:var(--ink);color:var(--gold3);font-family:var(--fp);font-size:13px;font-weight:700;cursor:pointer;gap:6px">
+          <input type="radio" name="new-active" value="1" checked style="accent-color:var(--gold2)"> 参加
+        </label>
+        <label style="flex:1;display:flex;align-items:center;justify-content:center;padding:9px;border:1.5px solid var(--parch3);background:var(--parch);color:var(--ink3);font-family:var(--fp);font-size:13px;font-weight:700;cursor:pointer;gap:6px">
+          <input type="radio" name="new-active" value="0" style="accent-color:var(--gold2)"> 不参加
+        </label>
+      </div>
+      <div id="add-member-err" style="display:none" class="alert alert-err" style="margin-bottom:8px">名前を入力してください</div>
+      <button class="btn btn-red" style="margin-bottom:0" onclick="confirmAddMember()">▶ 追加する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ BOTTOM NAV ════ -->
+<div class="bottom-nav">
+  <button class="bnav-item active" id="bnav-home" onclick="go('screen-home','home')">
+    <svg class="bnav-icon" viewBox="0 0 22 22" fill="none"><path d="M3 10.5L11 3l8 7.5V19a1 1 0 01-1 1H4a1 1 0 01-1-1v-8.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 20v-7h6v7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    ホーム
+  </button>
+  <button class="bnav-item" id="bnav-members" onclick="go('screen-members','members')">
+    <svg class="bnav-icon" viewBox="0 0 22 22" fill="none"><circle cx="9" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M2 19c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="currentColor" stroke-width="1.5"/><path d="M16 5a3 3 0 010 6M20 19c0-3-2-5.5-4.5-6.5" stroke="currentColor" stroke-width="1.5"/></svg>
+    メンバー
+  </button>
+  <button class="bnav-item" id="bnav-result" onclick="goResult()">
+    <svg class="bnav-icon" viewBox="0 0 22 22" fill="none"><rect x="2" y="2" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="12" y="2" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="12" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="12" y="12" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+    チーム分け
+  </button>
+  <button class="bnav-item" id="bnav-settings" onclick="goSettings()">
+    <svg class="bnav-icon" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M11 2v2.5M11 17.5V20M2 11h2.5M17.5 11H20M4.64 4.64l1.77 1.77M15.59 15.59l1.77 1.77M4.64 17.36l1.77-1.77M15.59 6.41l1.77-1.77" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    設定
+  </button>
+</div>
+
+<script>
+let members=[],teams=[],result={};
+let cfg={url:'',sheet:'',cn:'A',cw:'B',cj:'C',vj:'○'};
+const MAX=50;
+const TC=['#8b1a1a','#1a3a5c','#1a5c1a','#5c3a1a','#4a1a5c','#1a5c4a','#5c4a1a','#1a4a5c'];
+const TL=['#f5e6e6','#e6eef5','#e6f5e6','#f5ede6','#ede6f5','#e6f5ed','#f5f0e6','#e6f0f5'];
+
+/* ── navigation ── */
+function go(screenId,navKey){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  document.querySelectorAll('.bnav-item').forEach(b=>b.classList.remove('active'));
+  const n=document.getElementById('bnav-'+navKey);
+  if(n)n.classList.add('active');
+  window.scrollTo(0,0);
+}
+function goSettings(){
+  go('screen-settings','settings');
+  // 登録済みの値をフォームに反映
+  document.getElementById('s-url').value=cfg.url||'';
+  document.getElementById('s-sheet').value=cfg.sheet||'';
+  document.getElementById('s-col-name').value=cfg.cn||'A';
+  document.getElementById('s-col-wish').value=cfg.cw||'B';
+  document.getElementById('s-col-join').value=cfg.cj||'C';
+  document.getElementById('s-val-join').value=cfg.vj||'○';
+  document.getElementById('s-col-role').value=cfg.cr||'D';
+}
+
+function onLinkBtn(){
+  if(cfg.url){ fetchSheet(); }
+  else { goSettings(); }
+}
+
+/* ── CSV column helper ── */
+function col2idx(c){c=(c||'A').trim().toUpperCase();let n=0;for(let i=0;i<c.length;i++)n=n*26+(c.charCodeAt(i)-64);return n-1;}
+
+/* ── sample data ── */
+function loadSample(){
+  processRows([
+    ['田中太郎','Aチーム','○','砦役'],['鈴木花子','Bチーム','○','後援'],['佐藤次郎','Aチーム','○',''],
+    ['山田三郎','Cチーム','○','砦役'],['伊藤四郎','Bチーム','○',''],['渡辺五郎','Aチーム','○','後援'],
+    ['小林六子','Cチーム','○',''],['加藤七子','Bチーム','○','砦役'],['吉田八子','Aチーム','×',''],
+    ['中村九郎','Cチーム','○','後援'],['松本十子','Bチーム','○',''],['井上十一','Aチーム','○','砦役'],
+    ['木村十二','Cチーム','○',''],['林十三子','Bチーム','○','後援'],['清水十四','Aチーム','○',''],
+    ['高橋一郎','Dチーム','○','砦役'],['中島二郎','Dチーム','○',''],['小野三子','Aチーム','○','後援'],
+    ['岡田四郎','Bチーム','○',''],['坂本五子','Cチーム','○','砦役'],['吉川六郎','Dチーム','○',''],
+    ['原田七子','Aチーム','○','後援'],['藤田八郎','Bチーム','○',''],['村上九子','Cチーム','○',''],
+    ['石田十郎','Dチーム','○',''],['長谷川一','Aチーム','○','後援'],['宮本二子','Bチーム','○',''],
+    ['橋本三郎','Cチーム','○',''],['森田四子','Dチーム','○',''],['池田五郎','Aチーム','○',''],
+    ['藤本六子','Bチーム','○','後援'],['岩田七郎','Cチーム','○',''],['上田八子','Dチーム','○',''],
+    ['松田九郎','Aチーム','○',''],['西村十子','Bチーム','○','後援'],['中田一郎','Cチーム','○',''],
+    ['前田二子','Dチーム','○',''],['久保三郎','Aチーム','○',''],['菊池四子','Bチーム','○','後援'],
+    ['野口五郎','Cチーム','○',''],['大野六子','Dチーム','○',''],['河野七郎','Aチーム','○',''],
+    ['武田八子','Bチーム','○',''],['金子九郎','Cチーム','○','後援'],['近藤十子','Dチーム','○',''],
+    ['内田一郎','Aチーム','○',''],['丸山二子','Bチーム','○',''],['三浦三郎','Cチーム','○',''],
+    ['今井四子','Dチーム','○','後援'],['横山五郎','Aチーム','○',''],['安田六子','Bチーム','×',''],
+    ['酒井七郎','Cチーム','○',''],['谷口八子','Dチーム','○',''],['石川九郎','Aチーム','○','後援'],
+    ['福田亜子','Bチーム','○',''],['青木健一','Cチーム','○','']
+  ],'○');
+  go('screen-members','members');
+}
+
+/* ── process rows ── */
+function processRows(rows,jv){
+  const wishes=[...new Set(rows.map(r=>r[1]).filter(Boolean))];
+  teams=wishes.map((n,i)=>({name:n,color:TC[i%TC.length],light:TL[i%TL.length]}));
+  if(!teams.length)teams=[{name:'Aチーム',color:TC[0],light:TL[0]},{name:'Bチーム',color:TC[1],light:TL[1]}];
+  members=rows.map(r=>{const role=(r[3]||'').trim();return{name:r[0],wish:r[1]||'',active:r[2]===jv,role:(role==='なし'||role==='-'||role==='―')?'':role};});
+  renderMembers();
+  updateHome();
+}
+
+/* ── fetch from sheet ── */
+function fetchSheet(){
+  if(!cfg.url){setStatus('URLが設定されていません','warn');return;}
+  setStatus('データを取得中...','warn');
+  const m=cfg.url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if(!m){setStatus('URLの形式が正しくありません','err');return;}
+  const sp=cfg.sheet?encodeURIComponent(cfg.sheet):'Sheet1';
+  fetch(`https://docs.google.com/spreadsheets/d/${m[1]}/gviz/tq?tqx=out:csv&sheet=${sp}`)
+    .then(r=>{if(!r.ok)throw 0;return r.text();})
+    .then(txt=>{
+      const lines=txt.trim().split('\n');
+      const ni=col2idx(cfg.cn),wi=col2idx(cfg.cw),ji=col2idx(cfg.cj);
+      const ri=col2idx(cfg.cr||'D');
+      const rows=lines.slice(1).map(l=>{
+        const cs=l.split(',').map(c=>c.trim().replace(/^"|"$/g,''));
+        return[cs[ni]||'',cs[wi]||'',cs[ji]||'',cs[ri]||''];
+      }).filter(r=>r[0]);
+      processRows(rows,cfg.vj||'○');
+      setStatus(rows.length+'名のデータを取得しました','ok');
+    })
+    .catch(()=>setStatus('取得に失敗しました。シートの共有設定を確認してください','err'));
+}
+function setStatus(msg,type){
+  const el=document.getElementById('fetch-status');
+  el.style.display='block';el.textContent=msg;
+  el.className='alert alert-'+(type==='ok'?'ok':type==='err'?'err':'warn');
+}
+
+/* ── home state ── */
+function updateHome(){
+  const c=!!cfg.url;
+  document.getElementById('home-no-sheet').style.display=c?'none':'block';
+  document.getElementById('home-connected').style.display=c?'block':'none';
+  const lb=document.getElementById('link-btn');
+  if(lb) lb.textContent=c?'↺ スプレッドシートを更新する':'▶ スプレッドシートと連携する';
+  if(c){
+    const m=cfg.url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    document.getElementById('sheet-name-disp').textContent=cfg.sheet||(m?'ID: '+m[1].slice(0,22)+'...':cfg.url.slice(0,32)+'...');
+  }
+}
+
+/* ── settings ── */
+function saveSettings(){
+  cfg.url=document.getElementById('s-url').value.trim();
+  cfg.sheet=document.getElementById('s-sheet').value.trim();
+  cfg.cn=document.getElementById('s-col-name').value.trim()||'A';
+  cfg.cw=document.getElementById('s-col-wish').value.trim()||'B';
+  cfg.cj=document.getElementById('s-col-join').value.trim()||'C';
+  cfg.vj=document.getElementById('s-val-join').value.trim()||'○';
+  cfg.cr=document.getElementById('s-col-role').value.trim()||'D';
+  updateHome();
+  const msg=document.getElementById('save-msg');
+  msg.style.display='block';msg.textContent='設定を保存しました';
+  setTimeout(()=>msg.style.display='none',2500);
+  go('screen-home','home');
+}
+
+/* ── render members ── */
+function updateCounts(){
+  const active=members.filter(m=>m.active).length;
+  const toriCnt=members.filter(m=>m.active&&m.role==='砦役').length;
+  const koenCnt=members.filter(m=>m.active&&m.role==='後援').length;
+  // ヘッダーの常時表示
+  document.getElementById('hdr-active').textContent='参加: '+active+'名';
+  const ht=document.getElementById('hdr-tori');
+  const hk=document.getElementById('hdr-koen');
+  ht.textContent='砦役: '+toriCnt+'/5名';
+  ht.style.color=toriCnt<5?'#E8A020':toriCnt>=6?'#E84040':'var(--gold3)';
+  hk.textContent='後援: '+koenCnt+'/10名';
+  hk.style.color=koenCnt<10?'#E8A020':koenCnt>=11?'#E84040':'var(--gold3)';
+  // バッジ
+  document.getElementById('member-count').textContent='参加 '+active+'名';
+  // 警告バー（51人以上）
+  document.getElementById('warn-50').style.display=active>50?'block':'none';
+}
+
+function renderMembers(){
+  updateCounts();
+  const list=document.getElementById('member-list');
+  list.innerHTML='';
+  members.forEach((m,i)=>{
+    const row=document.createElement('div');
+    row.className='member-row';
+    row.style.opacity=m.active?'1':'.45';
+    row.innerHTML=`<label class="chk-wrap" onclick="toggleM(${i})"><div class="chk-box${m.active?' checked':''}"></div></label><span class="mname${m.active?'':' off'}">${m.name}</span><div class="radio-group" id="rg${i}"></div><select class="role-sel" id="rs${i}" onchange="members[${i}].role=this.value;updateCounts()"><option value="">―</option><option value="砦役"${m.role==='砦役'?' selected':''}>砦役</option><option value="後援"${m.role==='後援'?' selected':''}>後援</option></select>`;
+    list.appendChild(row);
+    const rg=row.querySelector('#rg'+i);
+    teams.forEach(t=>{
+      const lb=document.createElement('label');
+      lb.className='rl'+(m.wish===t.name?' sel':'');
+      lb.innerHTML=`<input type="radio" name="w${i}" value="${t.name}"${m.wish===t.name?' checked':''}><span>${t.name}</span>`;
+      lb.querySelector('input').addEventListener('change',()=>{
+        members[i].wish=t.name;
+        rg.querySelectorAll('.rl').forEach(l=>l.classList.remove('sel'));
+        lb.classList.add('sel');
+      });
+      rg.appendChild(lb);
+    });
+  });
+  renderTeamEdit();
+}
+function toggleM(i){
+  members[i].active=!members[i].active;
+  // 行の見た目だけ更新（リスト再描画なし）
+  const row=document.querySelector('#member-list .member-row:nth-child('+(i+1)+')');
+  if(row){
+    row.style.opacity=members[i].active?'1':'.45';
+    const chk=row.querySelector('.chk-box');
+    if(chk) chk.className='chk-box'+(members[i].active?' checked':'');
+    const nm=row.querySelector('.mname');
+    if(nm) nm.className='mname'+(members[i].active?'':' off');
+  }
+  updateCounts();
+}
+
+/* ── team edit ── */
+function renderTeamEdit(){
+  const el=document.getElementById('team-edit-list');
+  el.innerHTML='';
+  teams.forEach((t,i)=>{
+    const row=document.createElement('div');
+    row.className='team-edit-row';
+    row.innerHTML=`<span class="dot" style="background:${t.color}"></span><input type="text" value="${t.name}" onchange="renameTeam(${i},this.value)"><button class="btn btn-ghost btn-sm" onclick="removeTeam(${i})" style="flex-shrink:0">削除</button>`;
+    el.appendChild(row);
+  });
+}
+function renameTeam(i,n){const o=teams[i].name;members.forEach(m=>{if(m.wish===o)m.wish=n;});teams[i].name=n;renderMembers();}
+function addTeam(){teams.push({name:'チーム'+(teams.length+1),color:TC[teams.length%TC.length],light:TL[teams.length%TL.length]});renderMembers();}
+function removeTeam(i){if(teams.length<=1)return;teams.splice(i,1);renderMembers();}
+
+/* ── tabs ── */
+function switchMTab(t){
+  document.getElementById('tab-m').classList.toggle('active',t==='members');
+  document.getElementById('tab-t').classList.toggle('active',t==='teams');
+  document.getElementById('mtab-members').style.display=t==='members'?'flex':'none';
+  document.getElementById('mtab-teams').style.display=t==='teams'?'flex':'none';
+}
+function switchRTab(t){
+  document.getElementById('rtab-img').classList.toggle('active',t==='img');
+  document.getElementById('rtab-txt').classList.toggle('active',t==='txt');
+  document.getElementById('rtab-img-view').style.display=t==='img'?'flex':'none';
+  document.getElementById('rtab-txt-view').style.display=t==='txt'?'flex':'none';
+  if(t==='txt')renderText();
+}
+
+/* ── build & draw ── */
+function goResult(){
+  if(!members.length){loadSample();return;}
+  const active=members.filter(m=>m.active).length;
+  if(active>MAX){
+    alert('参加人数が'+active+'名います。50名以下にしてからチームを作成してください。');
+    return;
+  }
+  buildTeams();
+  go('screen-result','result');
+}
+function buildTeams(){
+  result={};
+  teams.forEach(t=>result[t.name]=[]);
+  const spare=[];
+  members.filter(m=>m.active).forEach(m=>{
+    if(result[m.wish]!==undefined)result[m.wish].push({name:m.name,role:m.role||''});
+    else spare.push({name:m.name,role:m.role||''});
+  });
+  spare.forEach(member=>{
+    const s=teams.reduce((a,b)=>result[a.name].length<=result[b.name].length?a:b);
+    result[s.name].push(member);
+  });
+  drawCanvas();
+}
+
+function drawMember(ctx,member,mx,my,colW,ROW){
+  const name=typeof member==='string'?member:(member.name||'');
+  const role=typeof member==='string'?'':(member.role||'');
+  ctx.fillStyle='#1a0f00';ctx.font='12px serif';ctx.textAlign='left';
+  ctx.fillText('◆ '+name,mx+4,my+ROW-5);
+  if(role){
+    const isTori=role==='砦役';
+    const bgC=isTori?'#8b1a1a':'#1a3a5c';
+    const bw2=isTori?32:30;
+    const bx=mx+colW-bw2-4;
+    const by=my+3;
+    const bh2=ROW-6;
+    ctx.fillStyle=bgC;
+    ctx.fillRect(bx,by,bw2,bh2);
+    ctx.fillStyle='#f5d78e';ctx.font='bold 9px serif';ctx.textAlign='center';
+    ctx.fillText(role,bx+bw2/2,by+bh2-3);
+    ctx.textAlign='left';
+  }
+}
+
+function drawCanvas(){
+  const canvas=document.getElementById('result-canvas');
+  const list=teams.map(t=>({...t,members:result[t.name]||[]}));
+  const SPLIT=10;
+  const W=700;
+  const teamCols=Math.min(list.length,2);
+  const teamRows=Math.ceil(list.length/teamCols);
+  const pad=12;
+  const bw=Math.floor((W-pad*(teamCols+1))/teamCols);
+  const HDR=44;
+  const ROW=22;
+  const IP=8;
+
+  function cardH(ms){
+    const n=ms.length;
+    if(n<=SPLIT) return HDR+n*ROW+IP*2;
+    return HDR+Math.max(SPLIT,n-SPLIT)*ROW+IP*2;
+  }
+
+  const rowHeights=[];
+  let totalH=pad;
+  for(let r=0;r<teamRows;r++){
+    let rh=0;
+    for(let c=0;c<teamCols;c++){
+      const idx=r*teamCols+c;
+      if(idx<list.length) rh=Math.max(rh,cardH(list[idx].members));
+    }
+    rowHeights.push(rh);
+    totalH+=rh+pad;
+  }
+  canvas.width=W;
+  canvas.height=totalH;
+  const ctx=canvas.getContext('2d');
+
+  ctx.fillStyle='#f5efe0';ctx.fillRect(0,0,W,totalH);
+  ctx.strokeStyle='#b8860b';ctx.lineWidth=3;ctx.strokeRect(3,3,W-6,totalH-6);
+  ctx.strokeStyle='#daa520';ctx.lineWidth=.8;ctx.strokeRect(7,7,W-14,totalH-14);
+
+  let yOff=pad;
+  for(let r=0;r<teamRows;r++){
+    const rh=rowHeights[r];
+    for(let c=0;c<teamCols;c++){
+      const idx=r*teamCols+c;
+      if(idx>=list.length) break;
+      const t=list[idx];
+      const x=pad+c*(bw+pad),y=yOff;
+      const bh=rh;
+
+      ctx.fillStyle=t.light;ctx.fillRect(x,y,bw,bh);
+      ctx.strokeStyle=t.color;ctx.lineWidth=2;ctx.strokeRect(x,y,bw,bh);
+      ctx.strokeStyle='#daa520';ctx.lineWidth=.6;ctx.strokeRect(x+3,y+3,bw-6,bh-6);
+
+      ctx.fillStyle=t.color;ctx.fillRect(x,y,bw,HDR);
+      ctx.strokeStyle='#daa520';ctx.lineWidth=.6;ctx.strokeRect(x+3,y+3,bw-6,HDR-3);
+      ctx.fillStyle='#f5d78e';ctx.font='bold 14px serif';ctx.textAlign='center';
+      ctx.fillText(t.name,x+bw/2,y+HDR-12);
+      ctx.font='11px serif';ctx.fillStyle='rgba(245,215,142,.8)';
+      ctx.fillText('['+t.members.length+'人]',x+bw-26,y+HDR-12);
+
+      const ms=t.members;
+      const doSplit=ms.length>SPLIT;
+      const col1=doSplit?ms.slice(0,SPLIT):ms;
+      const col2=doSplit?ms.slice(SPLIT):[];
+      const halfW=doSplit?Math.floor((bw-IP*3)/2):bw-IP*2;
+
+      if(doSplit){
+        ctx.strokeStyle=t.color;ctx.lineWidth=.5;
+        ctx.setLineDash([3,3]);
+        ctx.beginPath();
+        ctx.moveTo(x+IP*2+halfW,y+HDR+4);
+        ctx.lineTo(x+IP*2+halfW,y+bh-4);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      col1.forEach((member,mi)=>{
+        const mx=x+IP,my=y+HDR+IP+mi*ROW;
+        ctx.fillStyle=mi%2===0?'rgba(0,0,0,.05)':'rgba(0,0,0,0)';
+        ctx.fillRect(mx,my,halfW,ROW);
+        drawMember(ctx,member,mx,my,halfW,ROW);
+      });
+      col2.forEach((member,mi)=>{
+        const mx=x+IP*2+halfW,my=y+HDR+IP+mi*ROW;
+        ctx.fillStyle=mi%2===0?'rgba(0,0,0,.05)':'rgba(0,0,0,0)';
+        ctx.fillRect(mx,my,halfW,ROW);
+        drawMember(ctx,member,mx,my,halfW,ROW);
+      });
+    }
+    yOff+=rh+pad;
+  }
+}
+/* ── text & copy ── */
+function renderText(){
+  document.getElementById('text-result').textContent=teams.map(t=>`【${t.name}】${(result[t.name]||[]).map(m=>m.name+(m.role?'('+m.role+')':'')).join('、')}`).join('\n');
+}
+function copyText(){
+  const t=document.getElementById('text-result').textContent;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(t).then(()=>flashBtn(event.target,'▶ コピーしました ✓'));
+  }else{
+    const ta=document.createElement('textarea');
+    ta.value=t;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    flashBtn(event.target,'▶ コピーしました ✓');
+  }
+}
+function flashBtn(btn,msg){const o=btn.textContent;btn.textContent=msg;setTimeout(()=>btn.textContent=o,2000);}
+
+/* ── add member modal ── */
+function showAddMember(){
+  const sel=document.getElementById('new-member-wish');
+  sel.innerHTML='';
+  teams.forEach(t=>{
+    const opt=document.createElement('option');
+    opt.value=t.name;opt.textContent=t.name;
+    sel.appendChild(opt);
+  });
+  document.getElementById('new-member-name').value='';
+  document.getElementById('add-member-err').style.display='none';
+  document.querySelector('input[name="new-active"][value="1"]').checked=true;
+  const overlay=document.getElementById('add-member-overlay');
+  overlay.style.display='flex';
+}
+function hideAddMember(){
+  document.getElementById('add-member-overlay').style.display='none';
+}
+function confirmAddMember(){
+  const name=document.getElementById('new-member-name').value.trim();
+  if(!name){document.getElementById('add-member-err').style.display='block';return;}
+  const wish=document.getElementById('new-member-wish').value;
+  const active=document.querySelector('input[name="new-active"]:checked').value==='1';
+  const role=document.getElementById('new-member-role').value;
+  members.push({name,wish,active,role});
+  renderMembers();
+  hideAddMember();
+}
+
+/* ── download image ── */
+function downloadImg(){
+  const canvas=document.getElementById('result-canvas');
+  /* iOS fallback: open image in new tab */
+  if(/iPhone|iPad|iPod/i.test(navigator.userAgent)){
+    const win=window.open();
+    if(win){win.document.write('<img src="'+canvas.toDataURL('image/png')+'" style="max-width:100%">');win.document.title='チーム分け';}
+    return;
+  }
+  const a=document.createElement('a');
+  a.download='チーム分け.png';
+  a.href=canvas.toDataURL('image/png');
+  a.click();
+}
+</script>
+</body>
+</html>
